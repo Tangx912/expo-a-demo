@@ -16,11 +16,13 @@ test('published bundle resolves every entry asset under a repository subpath',()
   const url=new URL(relative,base);assert.ok(url.pathname.startsWith('/expo-a-demo/'));
   if(relative!=='./')assert.ok(existsSync(path.join(root,'dist',relative)),relative);
  }
- const main=readFileSync(path.join(root,'dist/src/main.js'),'utf8');
+ const entry=html.match(/src="(\.\/releases\/[^"]+\/src\/main.js)"/)[1];
+ const sourceDir=path.dirname(path.join(root,'dist',entry));
+ const main=readFileSync(path.join(root,'dist',entry),'utf8');
  for(const match of main.matchAll(/from ['"](\.\/[^'"]+)['"]/g)){
-  assert.ok(existsSync(path.resolve(root,'dist/src',match[1])),match[1]);
+  assert.ok(existsSync(path.resolve(sourceDir,match[1])),match[1]);
  }
  assert.ok(main.includes("new URL('../data/scene.json',import.meta.url)"));
- assert.ok(existsSync(path.join(root,'dist/data/scene.json')));
+ assert.ok(existsSync(path.resolve(sourceDir,'../data/scene.json')));
  assert.ok(!html.includes('/node_modules/'));
 });
