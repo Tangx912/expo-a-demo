@@ -43,7 +43,7 @@ function terrace(g,w,d,h,dir=1){
 function makeBuilding(b){
  const group=new THREE.Group();scene.add(group);groups.set(b.id,group);group.userData.building=b;
  const podium=polygon(b.footprint,4,paving);group.add(podium);
- const f=obb(b),g=new THREE.Group();g.position.set(...[b.center[0],4,b.center[1]]);g.rotation.y=-f.angle;group.add(g);
+ const f=obb(b),g=new THREE.Group();g.position.set(...[b.center[0],4,b.center[1]]);g.rotation.y=b.orientationDegrees===undefined?-f.angle:-b.orientationDegrees*Math.PI/180;group.add(g);
  const w=Math.max(24,f.w*.91),d=Math.max(22,f.d*.88),h=b.height-4;
  if(b.kind==='valley'){terrace(g,w,d,h,b.center[0]<80?-1:1);}
  else if(b.kind==='ndb'){

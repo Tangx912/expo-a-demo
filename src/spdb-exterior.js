@@ -45,6 +45,9 @@ export function createSpdbExterior({height=76,signTexture=null}={}){
   const crownMullions=[];
   for(const side of [-1,1])for(let zz=-d/2+.5;zz<d/2;zz+=1.48)crownMullions.push([side*(w/2+.13),h-upper/2-1.3,zz]);
   repeats(g,'crown-mullions',[.2,upper,.13],crownMullions,aluminum);
+  if(name==='main-tower')for(const side of [-1,1]){
+   box(g,'side-hanging-fascia',[.85,3.3,d+.9],[side*(w/2+.1),h-1.65,0],white);
+  }
   box(g,'roof-cap',[w+.6,.65,d+.65],[0,h-.325,0],white);
   box(g,'recessed-roof',[w-4,.3,d-4],[0,h-1.1,0],seam);
   if(name==='main-tower'){
@@ -52,7 +55,7 @@ export function createSpdbExterior({height=76,signTexture=null}={}){
    if(signTexture){
     const signMaterial=new THREE.MeshBasicMaterial({map:signTexture,transparent:true,depthWrite:false,side:THREE.DoubleSide});
     for(const side of [-1,1]){
-     const sign=new THREE.Mesh(new THREE.PlaneGeometry(17,2.4),signMaterial);sign.name='bank-roof-sign';sign.position.set(side*(w/2+.57),h-2.5,7);sign.rotation.y=side*Math.PI/2;g.add(sign);
+     const sign=new THREE.Mesh(new THREE.PlaneGeometry(17,2.4),signMaterial);sign.name='bank-roof-sign';sign.position.set(side*(w/2+.57),h-1.65,7);sign.rotation.y=side*Math.PI/2;g.add(sign);
     }
    }
   }
@@ -65,11 +68,15 @@ export function createSpdbExterior({height=76,signTexture=null}={}){
  box(hall,'hall-glazing',[12,hallHeight,34],[3,hallHeight/2,3],glass);
  box(hall,'hall-roof-edge',[12.4,.55,35],[3,hallHeight-.275,3],white);
  const hallMullions=[];
- for(let x=-2;x<=8;x+=1.25)hallMullions.push([x,hallHeight/2,-14.2]);
+ for(let x=-2;x<=8;x+=1.25)hallMullions.push([x,hallHeight/2,20.2]);
  repeats(hall,'hall-front-mullions',[.13,hallHeight,.2],hallMullions,aluminum);
- box(hall,'entrance-doors',[7,4.8,.2],[3,2.4,-14.3],topGlass);
- box(hall,'entrance-canopy',[9,.25,4],[3,4.9,-16],aluminum);
- box(model,'entrance-steps',[12,.3,6],[3,.15,-19],base);
+ box(hall,'entrance-doors',[7,4.8,.2],[3,2.4,20.3],topGlass);
+ const canopy=new THREE.Group();canopy.name='entrance-canopy';hall.add(canopy);
+ box(canopy,'canopy-glazing',[12.5,.18,6.5],[3,4.9,23],topGlass);
+ box(canopy,'canopy-front-fascia',[13,.5,.25],[3,4.88,26.15],white);
+ for(const x of [-3.4,3,9.4])box(canopy,'canopy-beam',[.2,.35,6.5],[x,4.8,23],aluminum);
+ for(const x of [-2,8])box(hall,'canopy-post',[.18,4.6,.18],[x,2.3,25.8],aluminum);
+ box(model,'entrance-steps',[13,.3,4],[3,.15,24],base);
  return model;
 }
 

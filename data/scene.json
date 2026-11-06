@@ -901,38 +901,39 @@
       "name": "浦发银行大厦",
       "footprint": [
         [
-          93.11,
-          -357.89
+          161.19,
+          -373.33
         ],
         [
-          149.07,
-          -403.2
+          216.34,
+          -327.05
         ],
         [
-          183.05,
-          -361.23
+          181.63,
+          -285.69
         ],
         [
-          127.09,
-          -315.92
+          126.48,
+          -331.97
         ],
         [
-          93.11,
-          -357.89
+          161.19,
+          -373.33
         ]
       ],
       "center": [
-        138.08,
-        -359.56
+        171.41,
+        -329.51
       ],
       "height": 80,
       "kind": "spdb",
       "address": "世博大道909号",
       "description": "依据Aedas实景精修：17层主楼、6层附楼与玻璃连接门厅；白色外框、密集竖向肋片与通透顶部。尺寸比例仍为示意。",
       "source": "https://www.aedas.com/en/project/shanghai-pudong-development-bank-new-office/",
-      "locationConfidence": "公开二维地图街坊＋地址近似定位",
+      "locationConfidence": "邻楼轴线对齐＋范围内退让，点位仍为示意",
       "heightConfidence": "公开项目资料",
-      "geometryConfidence": "人工概括轮廓，非测绘模型"
+      "geometryConfidence": "人工概括轮廓，非测绘模型",
+      "orientationDegrees": 40
     },
     {
       "id": "manual-union",

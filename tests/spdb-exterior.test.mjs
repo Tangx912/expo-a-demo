@@ -20,3 +20,12 @@ test('SPDB exterior stays finite and light enough for the district view',()=>{
  triangles+=(o.geometry.index?o.geometry.index.count:p.count)/3*(o.isInstancedMesh?o.count:1);});
  assert.ok(objects<80,`${objects} meshes`);assert.ok(triangles<35000,`${triangles} triangles`);
 });
+test('side fascia hangs below the roof and entrance canopy projects from visible hall front',()=>{
+ const m=createSpdbExterior();m.updateMatrixWorld(true);
+ const fascia=m.getObjectByName('side-hanging-fascia');assert.ok(fascia,'side fascia exists');
+ const band=new THREE.Box3().setFromObject(fascia);assert.ok(band.max.y-band.min.y>=3);
+ const canopy=new THREE.Box3().setFromObject(m.getObjectByName('entrance-canopy'));
+ const hall=new THREE.Box3().setFromObject(m.getObjectByName('hall-glazing'));
+ assert.ok(canopy.max.z>=hall.max.z+5,'canopy projects at least 5m from front');
+ assert.ok(canopy.min.y>=4&&canopy.max.y<=6,'canopy is above entrance height');
+});
