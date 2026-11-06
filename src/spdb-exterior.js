@@ -62,9 +62,10 @@ export function createSpdbExterior({height=76,signTexture=null}={}){
   return g;
  }
  wing('main-tower',-18,-1,30,46,height,17);
- wing('annex',20,5,22,39,height*.385,6);
+ const annexHeight=height*.385;
+ wing('annex',20,5,22,39,annexHeight,6);
  const hall=new THREE.Group();hall.name='entrance-hall';model.add(hall);
- const hallHeight=height*.325;
+ const hallHeight=annexHeight;
  box(hall,'hall-glazing',[12,hallHeight,34],[3,hallHeight/2,3],glass);
  box(hall,'hall-roof-edge',[12.4,.55,35],[3,hallHeight-.275,3],white);
  const hallMullions=[];

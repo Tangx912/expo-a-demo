@@ -29,3 +29,9 @@ test('side fascia hangs below the roof and entrance canopy projects from visible
  assert.ok(canopy.max.z>=hall.max.z+5,'canopy projects at least 5m from front');
  assert.ok(canopy.min.y>=4&&canopy.max.y<=6,'canopy is above entrance height');
 });
+test('central glass hall roof aligns with the low annex roof',()=>{
+ const m=createSpdbExterior();m.updateMatrixWorld(true);
+ const hall=new THREE.Box3().setFromObject(m.getObjectByName('entrance-hall'));
+ const annex=new THREE.Box3().setFromObject(m.getObjectByName('annex'));
+ assert.ok(Math.abs(hall.max.y-annex.max.y)<.001);
+});
