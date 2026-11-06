@@ -1,7 +1,11 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {createSpdbExterior,createSpdbSignTexture} from './spdb-exterior.js';
+import {createSpdbFloorExplorer} from './spdb-floor-explorer.js';
+import {floorFromHeight} from './spdb-floor-data.js';
 const $=s=>document.querySelector(s);
 const landmarks=new Set(['ndb','union','huatai','spdb','cetc','yihai','far','spic']);
+let floorExplorer;
 let data,renderer,scene,camera,controls,trees,sun,ambient,selected,flight,night=false,auto=false,top=false,filter='all',lastFrame=0,frames=0,lastFps=0;
 const groups=new Map(),pickables=[],labelItems=[],glassMaterials=[];
 const clock=new THREE.Clock();
@@ -42,7 +46,7 @@ function terrace(g,w,d,h,dir=1){
 function makeBuilding(b){
  const group=new THREE.Group();scene.add(group);groups.set(b.id,group);group.userData.building=b;
  const podium=polygon(b.footprint,4,paving);group.add(podium);
- const f=obb(b),g=new THREE.Group();g.position.set(...[b.center[0],4,b.center[1]]);g.rotation.y=-f.angle;group.add(g);
+ const f=obb(b),g=new THREE.Group();g.position.set(...[b.center[0],4,b.center[1]]);g.rotation.y=b.orientationDegrees===undefined?-f.angle:-b.orientationDegrees*Math.PI/180;group.add(g);group.userData.exteriorFrame=g;
  const w=Math.max(24,f.w*.91),d=Math.max(22,f.d*.88),h=b.height-4;
  if(b.kind==='valley'){terrace(g,w,d,h,b.center[0]<80?-1:1);}
  else if(b.kind==='ndb'){
@@ -63,12 +67,14 @@ function makeBuilding(b){
   box(g,w*.8,h,d*.48,-w*.05,0,-d*.18,warmglass);box(g,w*.34,h*.48,d*.45,-w*.32,0,d*.25,stone);box(g,w*.34,h*.55,d*.45,w*.32,0,d*.25,glass);
   for(let i=0;i<7;i++)box(g,4,h+2,d*.53,-w*.4+i*w*.115,0,-d*.18,white);
  }
- else if(b.kind==='far'||b.kind==='aviation'||b.kind==='spdb'){
-  const ww=w*(b.kind==='spdb'?.82:.9),dd=d*.75;
+ else if(b.kind==='spdb'){
+  const exterior=createSpdbExterior({height:h,signTexture:createSpdbSignTexture()});g.add(exterior);glassMaterials.push(...exterior.userData.glassMaterials);
+ }
+ else if(b.kind==='far'||b.kind==='aviation'){
+  const ww=w*.9,dd=d*.75;
   const shape=new THREE.Shape(),r=Math.min(9,dd/5),x=-ww/2,z=-dd/2;shape.moveTo(x+r,z);shape.lineTo(x+ww-r,z);shape.quadraticCurveTo(x+ww,z,x+ww,z+r);shape.lineTo(x+ww,z+dd-r);shape.quadraticCurveTo(x+ww,z+dd,x+ww-r,z+dd);shape.lineTo(x+r,z+dd);shape.quadraticCurveTo(x,z+dd,x,z+dd-r);shape.lineTo(x,z+r);shape.quadraticCurveTo(x,z,x+r,z);
   const geo=new THREE.ExtrudeGeometry(shape,{depth:h,bevelEnabled:false});geo.rotateX(-Math.PI/2);g.add(new THREE.Mesh(geo,blueglass));
   for(let y=5;y<h;y+=5)box(g,ww+.5,.7,dd+.5,0,y,0,white);
-  if(b.kind==='spdb')box(g,w*.55,25,d*.6,-w*.4,0,d*.3,stone);
  }
  else if(b.kind==='cetc'){
   box(g,w,15,d,0,0,0,stone);box(g,w*.43,h-15,d*.8,-w*.26,15,0,blueglass);box(g,w*.4,h*.7,d*.8,w*.27,15,0,glass);box(g,w*.7,9,d*.48,0,h*.58,0,glass);box(g,w*.35,1,d*.75,w*.27,15+h*.7,0,roof);fins(g,w,h,d*.8,8,15);
@@ -133,9 +139,10 @@ function selectBuilding(id,focus=true){
  selectionOutline=line([...b.footprint,b.footprint[0]],'#008568',1,5);scene.add(selectionOutline);
  $('#detail').hidden=false;$('#detail-title').textContent=b.name;$('#detail-desc').textContent=b.description;$('#detail-type').textContent=b.kind==='valley'?'GREEN VALLEY / 浦银绿谷':'HEADQUARTERS / 世博总部';
  $('#detail-meta').innerHTML=`<div>位置 <strong>${b.address}</strong></div><div>模型高度 <strong>${b.height} m · ${b.heightConfidence}</strong></div><div>定位依据 <strong>${b.locationConfidence}</strong></div><div>${b.geometryConfidence}</div>`;
+ $('#explore-floors').hidden=b.kind!=='spdb';$('#floor-entry-note').hidden=b.kind!=='spdb';$('#explore-floors').onclick=()=>floorExplorer.open();
  $('#detail-source').href=b.source;$('#detail-focus').onclick=()=>focusOn(b,370);labelItems.forEach(l=>l.el.classList.toggle('selected',l.b.id===id));drawList();if(focus)focusOn(b,560);
 }
-function focusOn(b,distance){auto=false;$('#rotate').classList.remove('active');top=false;updateViewButtons();const target=new THREE.Vector3(b.center[0],b.height*.3,b.center[1]);const direction=camera.position.clone().sub(controls.target).normalize();if(direction.y>.9)direction.set(.7,.7,1).normalize();fly(target.clone().add(direction.multiplyScalar(distance)),target);}
+function focusOn(b,distance){auto=false;$('#rotate').classList.remove('active');top=false;updateViewButtons();const target=new THREE.Vector3(b.center[0],b.height*(b.kind==='spdb'?.45:.3),b.center[1]);const direction=camera.position.clone().sub(controls.target).normalize();if(b.kind==='spdb')direction.set(-.85,.45,-.95).normalize();else if(direction.y>.9)direction.set(.7,.7,1).normalize();fly(target.clone().add(direction.multiplyScalar(distance)),target);}
 function fly(pos,target){flight={start:performance.now(),from:camera.position.clone(),to:pos,tf:controls.target.clone(),tt:target};}
 function view(name){auto=false;top=false;$('#rotate').classList.remove('active');if(name==='valley')fly(new THREE.Vector3(-290,230,570),new THREE.Vector3(50,10,-90));else if(name==='river')fly(new THREE.Vector3(-730,460,-590),new THREE.Vector3(20,25,-70));else fly(new THREE.Vector3(820,720,900),new THREE.Vector3(0,10,-70));updateViewButtons();$('.view-buttons .active')?.classList.remove('active');$('#'+({overview:'overview',valley:'valley-view',river:'river-view'}[name])).classList.add('active');}
 function updateViewButtons(){$('#view-3d').classList.toggle('active',!top);$('#view-top').classList.toggle('active',top);controls.maxPolarAngle=top?.01:Math.PI/2-.07;}
@@ -149,12 +156,12 @@ function bindUI(){
  $('#rotate').onclick=()=>{auto=!auto;top=false;updateViewButtons();$('#rotate').classList.toggle('active',auto);};
  $('#close-detail').onclick=()=>{$('#detail').hidden=true;selected=null;labelItems.forEach(l=>l.el.classList.remove('selected'));if(selectionOutline){scene.remove(selectionOutline);selectionOutline=null;}drawList();};
  $('#help-button').onclick=$('#sources-button').onclick=()=>$('#info-dialog').showModal();$('#close-dialog').onclick=()=>$('#info-dialog').close();$('#info-dialog').onclick=e=>{if(e.target===$('#info-dialog'))$('#info-dialog').close();};
- window.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#close-detail').click();}if(e.key==='/'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();$('#search').focus();}});
- let down;renderer.domElement.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];flight=null;});renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;const mouse=new THREE.Vector2(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);const hit=ray.intersectObjects(pickables,false)[0];if(hit)selectBuilding(hit.object.userData.buildingId);});
+ window.addEventListener('keydown',e=>{if(floorExplorer?.isOpen())return;if(e.key==='Escape'){$('#close-detail').click();}if(e.key==='/'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();$('#search').focus();}});
+ let down;renderer.domElement.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];flight=null;});renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;const mouse=new THREE.Vector2(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);const hit=ray.intersectObjects(pickables,false)[0];if(hit){const id=hit.object.userData.buildingId,b=data.buildings.find(item=>item.id===id);if(id===selected&&b.kind==='spdb'){const p=groups.get(id).userData.exteriorFrame.worldToLocal(hit.point.clone()),wing=p.x>9?'annex':'main';floorExplorer.open({wing,floor:floorFromHeight(wing,p.y),mode:'floor'});}else selectBuilding(id);}});
  controls.addEventListener('start',()=>{flight=null;auto=false;$('#rotate').classList.remove('active');$('#hint').style.opacity=0;});
  window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.setViewOffset(innerWidth,innerHeight,innerWidth>760?-155:0,0,innerWidth,innerHeight);camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 }
-function animate(now){requestAnimationFrame(animate);const delta=Math.min(clock.getDelta(),.05);
+function animate(now){requestAnimationFrame(animate);const delta=Math.min(clock.getDelta(),.05);if(floorExplorer?.isOpen())return;
  if(flight){const t=Math.min(1,(now-flight.start)/1100),s=t*t*(3-2*t);camera.position.lerpVectors(flight.from,flight.to,s);controls.target.lerpVectors(flight.tf,flight.tt,s);if(t===1)flight=null;}
  if(auto){const v=camera.position.clone().sub(controls.target);v.applyAxisAngle(new THREE.Vector3(0,1,0),delta*.1);camera.position.copy(controls.target).add(v);}
  controls.update();renderer.render(scene,camera);
@@ -170,6 +177,6 @@ async function init(){
  scene=new THREE.Scene();scene.background=new THREE.Color('#e8efea');scene.fog=new THREE.Fog('#e8efea',1800,3600);
  camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,1,6000);camera.setViewOffset(innerWidth,innerHeight,innerWidth>760?-155:0,0,innerWidth,innerHeight);camera.position.set(820,720,900);controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,10,-70);controls.enableDamping=true;controls.dampingFactor=.075;controls.minDistance=90;controls.maxDistance=2450;controls.maxPolarAngle=Math.PI/2-.07;controls.screenSpacePanning=false;
  ambient=new THREE.HemisphereLight('#f4fcff','#bdc6a8',2.5);scene.add(ambient);sun=new THREE.DirectionalLight('#fff2d4',3.2);sun.position.set(-450,950,-260);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-800;sun.shadow.camera.right=800;sun.shadow.camera.top=850;sun.shadow.camera.bottom=-700;sun.shadow.camera.far=2200;sun.shadow.normalBias=1;sun.shadow.bias=-.0002;scene.add(sun);
- terrain();addContext();data.buildings.forEach(makeBuilding);addTrees();drawList();bindUI();controls.update();$('#status').textContent='本地场景已就绪';document.body.dataset.ready='true';requestAnimationFrame(animate);
+ terrain();addContext();data.buildings.forEach(makeBuilding);addTrees();drawList();floorExplorer=createSpdbFloorExplorer();bindUI();controls.update();$('#status').textContent='本地场景已就绪';document.body.dataset.ready='true';requestAnimationFrame(animate);
 }
 init().catch(e=>{console.error(e);$('#error').hidden=false;$('#error').textContent='场景加载失败：'+e.message+'。请使用 npm start 启动，并在支持 WebGL 的浏览器访问本地地址。';$('#status').textContent='加载失败';});
