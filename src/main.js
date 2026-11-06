@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {createSpdbExterior,createSpdbSignTexture} from './spdb-exterior.js';
 const $=s=>document.querySelector(s);
 const landmarks=new Set(['ndb','union','huatai','spdb','cetc','yihai','far','spic']);
 let data,renderer,scene,camera,controls,trees,sun,ambient,selected,flight,night=false,auto=false,top=false,filter='all',lastFrame=0,frames=0,lastFps=0;
@@ -63,12 +64,14 @@ function makeBuilding(b){
   box(g,w*.8,h,d*.48,-w*.05,0,-d*.18,warmglass);box(g,w*.34,h*.48,d*.45,-w*.32,0,d*.25,stone);box(g,w*.34,h*.55,d*.45,w*.32,0,d*.25,glass);
   for(let i=0;i<7;i++)box(g,4,h+2,d*.53,-w*.4+i*w*.115,0,-d*.18,white);
  }
- else if(b.kind==='far'||b.kind==='aviation'||b.kind==='spdb'){
-  const ww=w*(b.kind==='spdb'?.82:.9),dd=d*.75;
+ else if(b.kind==='spdb'){
+  const exterior=createSpdbExterior({height:h,signTexture:createSpdbSignTexture()});g.add(exterior);glassMaterials.push(...exterior.userData.glassMaterials);
+ }
+ else if(b.kind==='far'||b.kind==='aviation'){
+  const ww=w*.9,dd=d*.75;
   const shape=new THREE.Shape(),r=Math.min(9,dd/5),x=-ww/2,z=-dd/2;shape.moveTo(x+r,z);shape.lineTo(x+ww-r,z);shape.quadraticCurveTo(x+ww,z,x+ww,z+r);shape.lineTo(x+ww,z+dd-r);shape.quadraticCurveTo(x+ww,z+dd,x+ww-r,z+dd);shape.lineTo(x+r,z+dd);shape.quadraticCurveTo(x,z+dd,x,z+dd-r);shape.lineTo(x,z+r);shape.quadraticCurveTo(x,z,x+r,z);
   const geo=new THREE.ExtrudeGeometry(shape,{depth:h,bevelEnabled:false});geo.rotateX(-Math.PI/2);g.add(new THREE.Mesh(geo,blueglass));
   for(let y=5;y<h;y+=5)box(g,ww+.5,.7,dd+.5,0,y,0,white);
-  if(b.kind==='spdb')box(g,w*.55,25,d*.6,-w*.4,0,d*.3,stone);
  }
  else if(b.kind==='cetc'){
   box(g,w,15,d,0,0,0,stone);box(g,w*.43,h-15,d*.8,-w*.26,15,0,blueglass);box(g,w*.4,h*.7,d*.8,w*.27,15,0,glass);box(g,w*.7,9,d*.48,0,h*.58,0,glass);box(g,w*.35,1,d*.75,w*.27,15+h*.7,0,roof);fins(g,w,h,d*.8,8,15);
@@ -135,7 +138,7 @@ function selectBuilding(id,focus=true){
  $('#detail-meta').innerHTML=`<div>位置 <strong>${b.address}</strong></div><div>模型高度 <strong>${b.height} m · ${b.heightConfidence}</strong></div><div>定位依据 <strong>${b.locationConfidence}</strong></div><div>${b.geometryConfidence}</div>`;
  $('#detail-source').href=b.source;$('#detail-focus').onclick=()=>focusOn(b,370);labelItems.forEach(l=>l.el.classList.toggle('selected',l.b.id===id));drawList();if(focus)focusOn(b,560);
 }
-function focusOn(b,distance){auto=false;$('#rotate').classList.remove('active');top=false;updateViewButtons();const target=new THREE.Vector3(b.center[0],b.height*.3,b.center[1]);const direction=camera.position.clone().sub(controls.target).normalize();if(direction.y>.9)direction.set(.7,.7,1).normalize();fly(target.clone().add(direction.multiplyScalar(distance)),target);}
+function focusOn(b,distance){auto=false;$('#rotate').classList.remove('active');top=false;updateViewButtons();const target=new THREE.Vector3(b.center[0],b.height*(b.kind==='spdb'?.45:.3),b.center[1]);const direction=camera.position.clone().sub(controls.target).normalize();if(b.kind==='spdb')direction.set(-.85,.45,-.95).normalize();else if(direction.y>.9)direction.set(.7,.7,1).normalize();fly(target.clone().add(direction.multiplyScalar(distance)),target);}
 function fly(pos,target){flight={start:performance.now(),from:camera.position.clone(),to:pos,tf:controls.target.clone(),tt:target};}
 function view(name){auto=false;top=false;$('#rotate').classList.remove('active');if(name==='valley')fly(new THREE.Vector3(-290,230,570),new THREE.Vector3(50,10,-90));else if(name==='river')fly(new THREE.Vector3(-730,460,-590),new THREE.Vector3(20,25,-70));else fly(new THREE.Vector3(820,720,900),new THREE.Vector3(0,10,-70));updateViewButtons();$('.view-buttons .active')?.classList.remove('active');$('#'+({overview:'overview',valley:'valley-view',river:'river-view'}[name])).classList.add('active');}
 function updateViewButtons(){$('#view-3d').classList.toggle('active',!top);$('#view-top').classList.toggle('active',top);controls.maxPolarAngle=top?.01:Math.PI/2-.07;}

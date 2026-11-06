@@ -17,6 +17,9 @@ test('published bundle resolves every entry asset under a repository subpath',()
   if(relative!=='./')assert.ok(existsSync(path.join(root,'dist',relative)),relative);
  }
  const main=readFileSync(path.join(root,'dist/src/main.js'),'utf8');
+ for(const match of main.matchAll(/from ['"](\.\/[^'"]+)['"]/g)){
+  assert.ok(existsSync(path.resolve(root,'dist/src',match[1])),match[1]);
+ }
  assert.ok(main.includes("new URL('../data/scene.json',import.meta.url)"));
  assert.ok(existsSync(path.join(root,'dist/data/scene.json')));
  assert.ok(!html.includes('/node_modules/'));

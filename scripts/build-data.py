@@ -40,7 +40,7 @@ def rect(lon,lat,w,d,angle=-39):
  return p+[p[0]]
 for id,n,lon,lat,w,d,h,kind,addr,desc,src in [
  ('manual-cetc','中电科信息科技大厦',121.49540,31.19262,100,66,120,'cetc','白莲泾路127号','东北总部街坊；两段高层与空中花园的简化意向。','https://www.shecc.com/Report.html?index=1'),
- ('manual-spdb','浦发银行大厦',121.49405,31.19363,72,54,80,'spdb','世博大道909号','17层主楼＋6层附楼，以柔和曲线表达汇流概念。','https://www.aedas.com/en/project/shanghai-pudong-development-bank-new-office/'),
+ ('manual-spdb','浦发银行大厦',121.49405,31.19363,72,54,80,'spdb','世博大道909号','依据Aedas实景精修：17层主楼、6层附楼与玻璃连接门厅；白色外框、密集竖向肋片与通透顶部。尺寸比例仍为示意。','https://www.aedas.com/en/project/shanghai-pudong-development-bank-new-office/'),
  ('manual-union','中国银联中心',121.49512,31.19385,65,62,150,'union','国展路1899号','150米主塔、两侧24米裙楼和空中连廊，绿谷轴线北端。','https://www.jzda001.com/index/index/details?id=14078&type=1'),
  ('manual-huanbo','环博大厦',121.49417,31.18885,55,50,52,'office','国展路1555号','位于国展路总部街坊；公开地址核对，轮廓为示意。','https://yfbzb.com/inviteBid/detail/20260512_596455211.html')]:
  p=rect(lon,lat,w,d);bs.append(dict(id=id,name=n,footprint=p,center=center(p),height=h,kind=kind,address=addr,description=desc,source=src,locationConfidence='公开二维地图街坊＋地址近似定位',heightConfidence='公开项目资料' if kind in ('union','spdb')else '示意估算',geometryConfidence='人工概括轮廓，非测绘模型'))
